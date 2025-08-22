@@ -1,0 +1,3 @@
+"""
+Supermarket Sales App package
+"""
