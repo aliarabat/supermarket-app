@@ -56,13 +56,6 @@ jobs:
           SHA_TAG=${GITHUB_SHA::7}
           echo "tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
 
-      # Step 3 - Extract metadata we can feed into the following step.
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -72,12 +65,10 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
 
-       # Step 5 - Deploy the image to an existing Northflank service or job. 
       - name: Deploy to Northflank
         uses: northflank/deploy-to-northflank@v1
         with:
           northflank-api-key: ${{ secrets.NORTHFLANK_API_KEY }}
           project-id: ${{ secrets.PROJECT_ID }}
           service-id: ${{ secrets.SERVICE_ID }}
-          image-path: ${{ steps.meta.outputs.tags }}
-          credentials-id: ${{ env.CREDENTIALS_ID }}
+          image-path: ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
