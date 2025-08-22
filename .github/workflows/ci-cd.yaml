@@ -56,6 +56,13 @@ jobs:
           SHA_TAG=${GITHUB_SHA::7}
           echo "tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
 
+      # Step 3 - Extract metadata we can feed into the following step.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -65,49 +72,12 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
 
-  deploy-doks:
-    needs: build-push-image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+       # Step 5 - Deploy the image to an existing Northflank service or job. 
+      - name: Deploy to Northflank
+        uses: northflank/deploy-to-northflank@v1
         with:
-          token: ${{ secrets.DO_API_TOKEN }}
-
-      - name: Get kubeconfig for DOKS cluster
-        run: doctl kubernetes cluster kubeconfig save ${{ secrets.KUBE_CLUSTER_NAME }} --expiry-seconds 600
-
-      - name: Substitute Docker Hub username in manifests
-        run: |
-          sed -i "s|DOCKER_HUB_USERNAME|${{ secrets.DOCKERHUB_USERNAME }}|g" k8s/deployment.yaml
-
-      - name: Deploy app manifests
-        run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          # kubectl apply -f k8s/ingress.yaml # if using ingress
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/supermarket-api --timeout=120s
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Install/upgrade kube-prometheus-stack (Grafana + Prometheus)
-        run: |
-          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
-          # Install or upgrade the stack with minimal values
-          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-            --namespace monitoring \
-            --set grafana.service.type=LoadBalancer \
-            --set grafana.adminPassword=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-
-      - name: Register ServiceMonitor for our app
-        run: |
-          kubectl apply -f k8s/monitoring/servicemonitor.yaml
+          northflank-api-key: ${{ secrets.NORTHFLANK_API_KEY }}
+          project-id: ${{ secrets.PROJECT_ID }}
+          service-id: ${{ secrets.SERVICE_ID }}
+          image-path: ${{ steps.meta.outputs.tags }}
+          credentials-id: ${{ env.CREDENTIALS_ID }}
