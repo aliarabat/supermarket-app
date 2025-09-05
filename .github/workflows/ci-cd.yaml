@@ -103,7 +103,7 @@ jobs:
           kubectl apply -f k8s/setup/namespace.yaml
           kubectl apply -f k8s/setup/quota.yaml
           kubectl apply -f k8s/setup/role.yaml
-          kubectl apply -f k8s/setup/rolebinding.yaml
+          kubectl apply -f k8s/setup/role_binding.yaml
 
       # deploy the app with dynamic image tag
       - name: Deploy app
