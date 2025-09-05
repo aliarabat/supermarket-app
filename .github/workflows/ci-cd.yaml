@@ -82,8 +82,11 @@ jobs:
 
       - name: Configure kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > kubeconf.yaml
-          export KUBECONFIG=$PWD/kubeconf.yaml
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+          ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -r ${{ secrets.IBM_REGION }}
+          ibmcloud ks cluster config --cluster ${{ secrets.IBM_CLUSTER_ID }}
+          # kubeconfig will be written to ~/.bluemix/plugins/container-service/clusters/<cluster-name>/kube-config-<cluster-name>.yml
+          export KUBECONFIG=$(ls ~/.bluemix/plugins/container-service/clusters/*/kube-config-*.yml | head -n 1)
 
       # one-time setup (safe to reapply)
       - name: Apply namespace and RBAC
