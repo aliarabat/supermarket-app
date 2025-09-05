@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: supermarket-api
+  labels:
+    app: supermarket-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: supermarket-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

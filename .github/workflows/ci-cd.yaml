@@ -108,6 +108,7 @@ jobs:
       # deploy the app with dynamic image tag
       - name: Deploy app
         run: |
+          NAMESPACE=$(kubectl get -f k8s/setup/namespace.yaml -o jsonpath='{.metadata.name}')
           IMAGE=${{ env.IMAGE_NAME }}:${{ needs.build-push-image.outputs.tag }}
-          sed "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE|" k8s/base/deployment.yaml | kubectl apply -f -
+          sed "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE|" k8s/base/deployment.yaml -n $NAMESPACE | kubectl apply -f -
           kubectl apply -f k8s/base/service.yaml
