@@ -80,12 +80,21 @@ jobs:
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      - name: Configure kubeconfig
+      - name: Install IBM Cloud CLI and Kubernetes plugin
         run: |
+          # Install IBM Cloud CLI
           curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+
+          # Install the container-service (Kubernetes) plugin
+          ibmcloud plugin install container-service -f
+
+          # Log in
           ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -r ${{ secrets.IBM_REGION }}
+
+          # Configure kubeconfig
           ibmcloud ks cluster config --cluster ${{ secrets.IBM_CLUSTER_ID }}
-          # kubeconfig will be written to ~/.bluemix/plugins/container-service/clusters/<cluster-name>/kube-config-<cluster-name>.yml
+
+          # Set KUBECONFIG environment variable
           export KUBECONFIG=$(ls ~/.bluemix/plugins/container-service/clusters/*/kube-config-*.yml | head -n 1)
 
       # one-time setup (safe to reapply)
