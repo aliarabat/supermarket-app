@@ -110,5 +110,9 @@ jobs:
         run: |
           NAMESPACE=$(kubectl get -f k8s/setup/namespace.yaml -o jsonpath='{.metadata.name}')
           IMAGE=${{ env.IMAGE_NAME }}:${{ needs.build-push-image.outputs.tag }}
-          sed "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE|" k8s/base/deployment.yaml -n $NAMESPACE | kubectl apply -f -
-          kubectl apply -f k8s/base/service.yaml
+          
+          # Substitute image and apply deployment in the correct namespace
+          sed "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE|" k8s/base/deployment.yaml | kubectl apply -f - -n $NAMESPACE
+
+          # Apply service in the same namespace
+          kubectl apply -f k8s/base/service.yaml -n $NAMESPACE
