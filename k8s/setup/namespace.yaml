@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: grp07eq1-namespace
+  name: grp01eq1-namespace

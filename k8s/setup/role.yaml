@@ -1,8 +1,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: grp07eq1-role
-  namespace: grp07eq1-namespace
+  name: grp01eq1-role
+  namespace: grp01eq1-namespace
 rules:
 - apiGroups:
   - ''

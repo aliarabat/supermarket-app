@@ -74,30 +74,22 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install IBM Cloud CLI and Kubernetes plugin
-        run: |
-          # Install IBM Cloud CLI
-          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-          # Install the container-service (Kubernetes) plugin
-          ibmcloud plugin install container-service -f
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GCP_REGION }}
 
-          # Log in
-          ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -r ${{ secrets.IBM_REGION }}
-
-          # Configure kubeconfig
-          ibmcloud ks cluster config --cluster ${{ secrets.IBM_CLUSTER_ID }}
-
-          # Set KUBECONFIG environment variable
-          export KUBECONFIG=$(ls ~/.bluemix/plugins/container-service/clusters/*/kube-config-*.yml | head -n 1)
-
-      # one-time setup (safe to reapply)
       - name: Apply namespace and RBAC
         run: |
           kubectl apply -f k8s/setup/namespace.yaml
@@ -105,14 +97,25 @@ jobs:
           kubectl apply -f k8s/setup/role.yaml
           kubectl apply -f k8s/setup/role_binding.yaml
 
-      # deploy the app with dynamic image tag
       - name: Deploy app
         run: |
           NAMESPACE=$(kubectl get -f k8s/setup/namespace.yaml -o jsonpath='{.metadata.name}')
           IMAGE=${{ env.IMAGE_NAME }}:${{ needs.build-push-image.outputs.tag }}
-          
+
           # Substitute image and apply deployment in the correct namespace
           sed "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE|" k8s/base/deployment.yaml | kubectl apply -f - -n $NAMESPACE
 
           # Apply service in the same namespace
           kubectl apply -f k8s/base/service.yaml -n $NAMESPACE
+
+      - name: Print pod name(s)
+        run: |
+          NAMESPACE=$(kubectl get -f k8s/setup/namespace.yaml -o jsonpath='{.metadata.name}')
+          echo "Pods running in namespace $NAMESPACE:"
+          kubectl get pods -n $NAMESPACE -o custom-columns=NAME:.metadata.name --no-headers
+
+      - name: Print service external IP
+        run: |
+          NAMESPACE=$(kubectl get -f k8s/setup/namespace.yaml -o jsonpath='{.metadata.name}')
+          echo "Service external IP:"
+          kubectl get svc -n $NAMESPACE -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}'
