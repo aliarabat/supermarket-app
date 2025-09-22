@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: grp03eq1-role
-  namespace: grp03eq1-namespace
+  name: grp01eq1-role
+  namespace: grp01eq1-namespace
 spec:
   hard:
     limits.cpu: 500m
