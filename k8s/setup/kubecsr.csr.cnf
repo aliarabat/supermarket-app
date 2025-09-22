@@ -5,7 +5,7 @@ default_md = sha256
 distinguished_name = dn
 
 [ dn ]
-CN = grp05eq1
+CN = grp06eq1
 
 [ v3_ext ]
 authorityKeyIdentifier = keyid,issuer:always
