@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: grp06eq1-role
-  namespace: grp06eq1-namespace
+  name: grp07eq1-role
+  namespace: grp07eq1-namespace
 spec:
   hard:
     limits.cpu: 500m
